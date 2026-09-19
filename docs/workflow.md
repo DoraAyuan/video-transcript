@@ -16,6 +16,7 @@
 1. `python scripts/extract.py <URL> --browser edge`
    - 有 CC/AI 字幕 → 直接产出 `<标题>_时间戳字幕.srt` + `<标题>_逐句原始.txt`，**跳过 ASR**（AI 字幕需要登录态：`--browser` 复用浏览器 cookies，浏览器需处于关闭状态否则数据库被锁）。
    - 无字幕 → 自动下载音频到 `output/<标题>/audio.*`，继续第二步。
+   - 需要片源 → 追加 `--video`：额外下载 `output/<标题>/video.*`；无字幕时会改为下视频并用 ffmpeg 抽出 `audio.wav` 供转写。定稿时 `finalize.py --video <video路径>`。
 2. `python scripts/cloud_transcribe.py <音频> work/out`
 3. `python scripts/cloud_result_to_srt.py work/out.json work/out`
 4. `python scripts/finalize.py work/out_trans.json "<标题>" --link <URL> --platform bilibili`

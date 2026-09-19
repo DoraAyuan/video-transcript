@@ -1,7 +1,9 @@
 # video-transcript-toolkit
 
-给一个视频链接，稳定拿到**完整口播文案**（带时间戳字幕 + 纯文本）。
+给一个视频链接，稳定拿到**完整口播文案**（带时间戳字幕 + 纯文本）；需要片源时也可保留**源视频**。
 字幕优先取平台现成轨道，取不到再走 ASR；ASR 主推阿里云百炼 `qwen-audio` 云端转写（中文准、快），本地 faster-whisper 作断网兜底（与云端同一套 `trans.json` schema，可直接定稿）。
+
+**关于视频文件**：默认**不会**下载视频——有字幕就只要字幕，无字幕只下音频（省流量、够转写）。若你还要视频本体，给 `extract.py` 加 `--video` 即可；定稿时再 `finalize.py --video <路径>` 打进输出目录。抖音因风控需按 [docs/workflow.md](docs/workflow.md) 嗅探双流，合成后往往自带视频。
 
 > 实战验证：14 分钟课堂视频，云端转写 15 秒返回、词级置信度 1.0，产出 131 句带时间戳文案。
 
@@ -11,7 +13,7 @@
 |---|---|---|
 | 哔哩哔哩 | 主力 | CC/AI 字幕优先；AI 字幕加 `--browser edge` 复用登录态 |
 | 抖音 | 主力（需嗅探） | 直连被风控；按 [docs/workflow.md](docs/workflow.md) 浏览器嗅探双流 |
-| YouTube / 西瓜 / Vimeo 等 | 通用 | `extract.py` 基于 yt-dlp，能下到字幕就跳过 ASR，否则下音频再转写 |
+| YouTube / 西瓜 / Vimeo 等 | 通用 | `extract.py` 基于 yt-dlp；默认字幕/音频，加 `--video` 才下片源 |
 | 其它 yt-dlp 支持站 | 通用 | 同一命令；成功率取决于该站反爬与是否有字幕轨 |
 | 本地音视频文件 | 支持 | 跳过 extract，直接 `cloud_transcribe.py` 或 `asr_local.py` |
 
@@ -31,10 +33,13 @@
 pip install -r requirements.txt          # yt-dlp（云端转写零依赖，纯标准库）
 set DASHSCOPE_API_KEY=sk-xxxx            # 阿里云百炼控制台创建；Linux/macOS 用 export
 
-# B 站：字幕优先，没字幕自动下音频
+# B 站：字幕优先，没字幕自动下音频（默认不下视频）
 python scripts/extract.py "https://www.bilibili.com/video/BVxxxx" --browser edge
 # YouTube 等同理
 python scripts/extract.py "https://www.youtube.com/watch?v=xxxx"
+
+# 需要源视频时再加 --video（有字幕也会额外下 video.*；无字幕则下 video.* 并抽出 audio 供 ASR）
+python scripts/extract.py "https://www.youtube.com/watch?v=xxxx" --video
 ```
 
 ### 云端一条龙（extract 未直接吐出字幕时）
@@ -42,7 +47,9 @@ python scripts/extract.py "https://www.youtube.com/watch?v=xxxx"
 ```bash
 python scripts/cloud_transcribe.py "output/<标题>/audio.m4a" work/out
 python scripts/cloud_result_to_srt.py work/out.json work/out
-python scripts/finalize.py work/out_trans.json "<标题>" --link "<URL>" --platform bilibili
+# 若 extract 加过 --video，把片源一并打进输出目录：
+python scripts/finalize.py work/out_trans.json "<标题>" --link "<URL>" --platform bilibili \
+  --video "output/<标题>/video.mp4"
 
 # 人工/AI 通读完整文案后，手写总结（脚本不生成）
 #   output/<标题>/<标题>_内容总结.txt
@@ -91,7 +98,7 @@ output/<视频标题>/
 
 | 脚本 | 作用 |
 |---|---|
-| `scripts/extract.py` | 获取阶段：现成字幕优先（yt-dlp → 真 SRT）/ 音频下载 / 抖音给出嗅探指引 |
+| `scripts/extract.py` | 获取阶段：现成字幕优先（yt-dlp → 真 SRT）/ 默认只下音频 / `--video` 可选下源视频 |
 | `scripts/cloud_transcribe.py` | 云端转写：getPolicy → OSS 上传（不带 API Key 头）→ 异步提交 → 轮询（带超时） |
 | `scripts/cloud_result_to_srt.py` | 下载转写结果 → SRT / 逐句 TXT / 句级 JSON |
 | `scripts/asr_local.py` | 本地兜底：faster-whisper CPU int8，输出与云端同 schema 的 `_trans.json` |
@@ -110,6 +117,7 @@ output/<视频标题>/
 - 密钥**只**从环境变量 `DASHSCOPE_API_KEY` 或 `--key-file` 读取；OSS 表单上传请求不携带 Bearer。
 - `.gitignore` 已屏蔽 `.env`/密钥文件/产物目录/`.spec-workflow/`。
 - 仓库不包含任何真实链接、密钥与视频内容。
+- 下载音视频/字幕仅用于你**有权保存与使用**的内容（自建课、授权素材、合理使用等），并遵守平台服务条款。
 
 ## License
 
