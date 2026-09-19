@@ -1,0 +1,32 @@
+# 密钥与环境 —— 绝不入库
+.env
+*.env
+*api_key*
+*apikey*
+*.key
+secrets.*
+
+# 产物与临时文件（体积大/含版权内容）
+output/
+work/
+*.mp4
+*.mp3
+*.wav
+*.m4a
+*.srt
+*_raw.txt
+*_trans.json
+*_cloud.json
+
+# 本地 ASR 模型缓存（体积大，自行下载）
+models/
+hf_cache/
+
+# 本地工作流工具，不入库
+.spec-workflow/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/

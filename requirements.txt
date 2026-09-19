@@ -1,0 +1,4 @@
+# 云端转写脚本零第三方依赖（纯 Python 标准库）
+# 以下按需安装：
+yt-dlp>=2024.4.9        # B站字幕/音频获取（scripts/extract.py）
+# faster-whisper>=1.0   # 本地兜底 ASR（scripts/asr_local.py），不需要可不装
